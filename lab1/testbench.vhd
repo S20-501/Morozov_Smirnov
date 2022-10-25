@@ -32,7 +32,7 @@ architecture tb of tb_clock is
     signal out_7seg_minute_tens   : std_logic_vector (7 downto 0):=(others => '0');
     signal out_7seg_hours_tens    : std_logic_vector (7 downto 0):=(others => '0');
     signal out_7seg_hours_units : std_logic_vector (7 downto 0):=(others => '0');
-    constant TbPeriod : time := 2 ps; -- EDIT Put right period here
+    constant TbPeriod : time := 2 ps;
     signal TbClock : std_logic := '1';
     signal TbSimEnded : std_logic := '0';
 begin
