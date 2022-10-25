@@ -1,4 +1,4 @@
-library ilibrary ieee;
+library ieee;
 use ieee.std_logic_1164.all;
 use IEEE.numeric_std.all;
 entity tester_clock is
@@ -42,13 +42,13 @@ stimuli : process
 		  skiptime(50);
 		  tester_add_minute_tens<='0';
 		  tester_add_hours_units<='1';
-       		  --wait for 60 ns;      
+        	  --wait for 60 ns;      
         	  skiptime(50);
-		  tester_add_hours_units<='1';
+		  tester_add_hours_units<='0';
 		  tester_add_hours_tens<='1';
 		  --wait for 60 ns;
         	  skiptime(50);
-		  tester_add_hours_tens<='1';
+		  tester_add_hours_tens<='0';
 		  skiptime(50);
 		  TbSimEnded <= '1';
     end process;
