@@ -16,9 +16,12 @@ architecture tester of tester_clock is
 	 procedure skiptime(time_count: in integer) is
 	 begin
 		  count_time: for k in 0 to time_count-1 loop
-		 if rising_edge(TbClock) then
-		  wait for 2 ps;
-		  end if;
+		    wait until rising_edge(TbClock); 
+		    wait for 200 fs; --need to wait for signal stability, value depends on the Clk frequency. 
+		                     --For example, for Clk period = 100 ns (10 MHz) it's ok to wait for 200 ps.
+		 --if rising_edge(TbClock) then
+		  --wait for 2 ps;
+		  --end if;
 		  end loop count_time ;
 	 end;
 begin
