@@ -6,14 +6,16 @@ use IEEE.std_logic_signed.all;
 
 
 entity demodulator_decoder is
-	port(CLK : in std_logic :='0';
-	reset : in std_logic :='0';
+	port(clk : in std_logic :='0';
+	nRst : in std_logic :='0';
 	IData_In :in STD_LOGIC_VECTOR(9 downto 0):=(others => '0');
 	QData_In :in STD_LOGIC_VECTOR(9 downto 0):=(others => '0');
 	DataValid : in std_logic :='0';
 	BufDataOut:out STD_LOGIC_VECTOR(15 downto 0):=(others => '0');
-	DataStrobe : out std_logic :='0');
-end demodulator_decoder;
+	DataStrobe : out std_logic :='0'
+	--modul : out unsigned(1 downto 0) :=(others => '1')
+	);
+end entity demodulator_decoder;
 
 architecture test_demodulator_decoder of demodulator_decoder is
 
@@ -26,49 +28,50 @@ constant  if_modulation_0_const : unsigned :=b"00";
 constant  if_modulation_1_const : unsigned :=b"01";
 constant  if_modulation_2_const : unsigned :=b"10";
 constant  if_modulation_3_const : unsigned :=b"11";
-constant  limit_sensivity_differencial_const : integer:=5;
-constant mean_testing_time : unsigned(3 downto 0):="1001";
-
+constant  limit_sensivity_differencial_const : integer:=1;
+constant mean_testing_time : unsigned(11 downto 0):="100100010001";
+constant number_of_bytes_const : integer:= 10;
 
 signal delta_I_Data_In_r : signed(9 downto 0):=(others => '0');
 signal delta_Q_Data_In_r : signed(9 downto 0):=(others => '0');
-signal differencial_I_Data_In_r : signed(13 downto 0):=(others => '0');
-signal differencial_Q_Data_In_r : signed(13 downto 0):=(others => '0'); 
+signal differencial_I_Data_In_muchbites_r : signed(19 downto 0):=(others => '0');
+signal differencial_Q_Data_In_muchbites_r : signed(19 downto 0):=(others => '0');
+signal differencial_I_Data_In_r : signed(9 downto 0):=(others => '0');
+signal differencial_Q_Data_In_r : signed(9 downto 0):=(others => '0');  
 signal modulation_r :unsigned(1 downto 0) :=(others => '1');
 signal information_r :STD_LOGIC_VECTOR(3 downto 0) :=(others => '0');
 signal	delay_IData_In_r : STD_LOGIC_VECTOR(9 downto 0):=(others => '0');
 signal	delay_QData_In_r : STD_LOGIC_VECTOR(9 downto 0):=(others => '0');
 signal	delay_r : unsigned(3 downto 0):=(others => '0');
 signal	count_delay_r : unsigned(3 downto 0):=(others => '0');
-signal	count_testing_time_r : unsigned(3 downto 0):=(others => '0');
+signal	count_testing_time_r : unsigned(11 downto 0):=(others => '0');
 signal	count_time_r : unsigned(3 downto 0):=(others => '0');
-
-
-signal amplitude: unsigned(10 downto 0);
-signal corner: unsigned(9 downto 0);
-type t_amplitude_lut is array (0 to 8) of unsigned(10 downto 0);
+signal	amplitude_r : unsigned(19 downto 0):=(others => '0');
+signal corner_r: signed(19 downto 0):=(others => '0');
+type t_amplitude_lut is array (0 to 8) of unsigned(19 downto 0);
 signal amplitude_lut : t_amplitude_lut;
 type t_corner_lut is array (0 to 8) of signed(9 downto 0);
 signal corner_lut : t_corner_lut;
 
-function division_lut(y: in signed(3 downto 0))
-return signed is
-variable inverted_y_r: signed(3 downto 0);
-constant C_NY       : integer:= 4;
-constant C_NDY      : integer:= 8;
-type t_divition_lut is array (0 to 2**C_NY-1) of integer range 0 to 2**C_NDY-1;
-constant C_DIV_LUT  : t_divition_lut := (511, 255, 127, 84, 63, 50, 42, 36, 31, 27, 25, 22, 20, 19, 17, 16);
-variable invert_y_r : signed(7 downto 0) :=(others => '0');
+function division_lut(y: in integer)
+return integer is
+variable inverted_y_r: integer;
+constant C_NY2      : integer:= 10;
+constant C_NDY2      : integer:= 10;
+type t_divition_lut2 is array (0 to 2**C_NY2-1) of integer range 0 to 2**C_NDY2-1;
+variable C_DIV_LUT2  : t_divition_lut2;
 begin
-	invert_y_r := signed( conv_unsigned(C_DIV_LUT( conv_integer(unsigned(y))),C_NDY));
-	inverted_y_r:= invert_y_r(7 downto 4);
-	return inverted_y_r;
+		divition_lut2_write_loop : for i in 0 to 1023 loop
+			C_DIV_LUT2(i):=conv_integer(1023/(i+1));
+		end loop divition_lut2_write_loop;
+		inverted_y_r := C_DIV_LUT2 (y-1);
+		return inverted_y_r;
 end;
 
 function modulation_identification (amplitude_lut :in t_amplitude_lut; corner_lut : in t_corner_lut)
 	return unsigned is
 	variable modulation :unsigned(1 downto 0) :=(others => '1');
-	variable amplitude :unsigned(10 downto 0);
+	variable amplitude :unsigned(19 downto 0);
 	variable identification_change_amplitude : integer := 0;
 	variable identification_coincidences_corner : integer := 0;
 	variable number_corners: integer := 1;
@@ -236,9 +239,9 @@ return information;
 end;
 
 begin
-main: process(CLK, reset)
+main: process(clk, nRst)
 	begin
-		if reset='1' then
+		if nRst='1' then
 			delta_I_Data_In_r <=(others => '0');
 			delta_Q_Data_In_r <=(others => '0');
 			differencial_I_Data_In_r <=(others => '0');
@@ -249,12 +252,14 @@ main: process(CLK, reset)
 			delay_QData_In_r <=(others => '0');
 			delay_r <=(others => '0');
 			count_delay_r <=(others => '0');
-		elsif rising_edge(CLK) then
+		elsif rising_edge(clk) then
 			if(count_testing_time_r < mean_testing_time) then
 				delta_I_Data_In_r <=abs(signed(IData_In)-signed(delay_IData_In_r));		
 				delta_Q_Data_In_r <=abs(signed(QData_In)-signed(delay_QData_In_r));
-				differencial_I_Data_In_r <= delta_I_Data_In_r * division_lut(signed(count_delay_r));
-				differencial_Q_Data_In_r <= delta_Q_Data_In_r * division_lut(signed(count_delay_r));
+				differencial_I_Data_In_muchbites_r <= delta_I_Data_In_r * conv_signed(division_lut(conv_integer(count_delay_r)),number_of_bytes_const);
+				differencial_Q_Data_In_muchbites_r <= delta_Q_Data_In_r * conv_signed(division_lut(conv_integer(count_delay_r)),number_of_bytes_const);
+				differencial_I_Data_In_r <= differencial_I_Data_In_muchbites_r(differencial_I_Data_In_muchbites_r'LENGTH-1 downto number_of_bytes_const);
+				differencial_Q_Data_In_r <= differencial_Q_Data_In_muchbites_r(differencial_Q_Data_In_muchbites_r'LENGTH-1 downto number_of_bytes_const);
 				count_testing_time_r<=count_testing_time_r + 1;
 				
 				if( differencial_I_Data_In_r >conv_signed(limit_sensivity_differencial_const,3)) then
@@ -286,10 +291,11 @@ main: process(CLK, reset)
 						delay_QData_In_r <= QData_In;
 					end if;
 				end if;
-				amplitude_lut(conv_integer(count_testing_time_r))<= unsigned(IData_In)*usigned(IData_In)+ unsigned(QData_In)
-				);
-				corner_lut(conv_integer(count_testing_time_r))<=signed(QData_In);--*division_lut(signed(IData_In));
-
+				
+				amplitude_r<= unsigned(IData_In)* unsigned(IData_In) + unsigned(QData_In)*unsigned(QData_In);
+				corner_r<=signed(QData_In)*conv_signed(division_lut(conv_integer(signed(IData_In))),number_of_bytes_const);
+				corner_lut(conv_integer(count_testing_time_r))<= corner_r(corner_r'LENGTH-1 downto number_of_bytes_const);
+				amplitude_lut(conv_integer(count_testing_time_r))<= amplitude_r;
 			else
 				if(count_time_r < delay_r) then
 					count_time_r<=count_time_r+1;
@@ -329,4 +335,4 @@ main: process(CLK, reset)
 		end if;		
 	end if;
 	end process;
-end test_demodulator_decoder;
+end architecture;
